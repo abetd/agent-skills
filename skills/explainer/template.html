@@ -1,0 +1,107 @@
+<!doctype html>
+<!--
+  ============================================================================
+  explainer テンプレート（配色と文字の基本だけ。レイアウトは持たない）
+  ============================================================================
+  artifact-design スキルが使えない環境のための予備。使えるときは配色・書体も
+  トピックごとに決めるので、このテンプレートは使わない（SKILL.md ステップ 4）
+
+  使い方:
+    1. このファイルをコピーして出力先に置く。この使い方コメントは出力に残さない
+    2. style 要素の「配色」「SVG 用クラス」はそのまま使う。ダークモードはここで担保される
+    3. レイアウトはトピックに合わせて毎回組み立てる。必要な CSS は style 要素の末尾
+       （「ここから下はトピックごとに足す」の下）に足してよい。色は必ず var(--…) から選ぶ
+    4. 絵はインライン SVG で描き、SVG 用クラス（.fill-* / .stroke-* / .label）で塗る。
+       色コードを直書きしない（ダークモードで色が切り替わらなくなる）
+    5. body 要素内は見出し・リード文と SVG の書き方の例だけ。例は消して中身を書く
+-->
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>【トピック】</title>
+<style>
+  /* ==========================================================================
+     配色 — 色トークンとダークモード。ここは原則そのまま使う
+     ========================================================================== */
+  :root{
+    --bg:#fbfaf7; --panel:#fff; --ink:#1c1b19; --muted:#6b6864; --line:#e3dfd8;
+    --c1:#3b5bdb; --c1-soft:#e7ecfd;   /* 主役 */
+    --c2:#e8590c; --c2-soft:#fdeee4;   /* 相手役・対比 */
+    --c3:#2f9e44; --c3-soft:#e6f5e9;   /* うまくいく・ゴール */
+    --c4:#c2255c; --c4-soft:#fbe7ee;   /* 問題・注意 */
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#17181a; --panel:#1f2124; --ink:#e8e6e3; --muted:#9a9691; --line:#363a3f;
+      --c1:#8ba4ff; --c1-soft:#232b45;
+      --c2:#ff9b5c; --c2-soft:#3a2a1f;
+      --c3:#6bd384; --c3-soft:#1d3324;
+      --c4:#f57ea6; --c4-soft:#3a1f2a;
+    }
+  }
+
+  /* ==========================================================================
+     基本 — 文字と余白
+     ========================================================================== */
+  *{box-sizing:border-box}
+  body{margin:0;padding:40px 16px 80px;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",YuGothic,Meiryo,sans-serif;
+    line-height:1.7;font-size:17px}
+  .wrap{max-width:900px;margin:0 auto}
+  h1{font-size:30px;margin:0 0 12px;line-height:1.35}
+  h2{font-size:20px;margin:44px 0 14px}
+  .lead{font-size:19px;font-weight:600;color:var(--ink)}
+  svg{display:block;width:100%;height:auto}
+
+  /* ==========================================================================
+     汎用の最小部品 — 使わなくてよい
+     ========================================================================== */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 20px;margin:0 0 18px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+  .caption{text-align:center;font-size:17px;font-weight:600;margin-top:12px}
+  .caption small{display:block;font-size:14px;font-weight:400;color:var(--muted);margin-top:2px}
+
+  /* ==========================================================================
+     SVG 用クラス — 絵の色はここから選ぶ（ダークモードで自動的に切り替わる）
+     ========================================================================== */
+  .fill-c1{fill:var(--c1)} .fill-c1s{fill:var(--c1-soft)}
+  .fill-c2{fill:var(--c2)} .fill-c2s{fill:var(--c2-soft)}
+  .fill-c3{fill:var(--c3)} .fill-c3s{fill:var(--c3-soft)}
+  .fill-c4{fill:var(--c4)} .fill-c4s{fill:var(--c4-soft)}
+  .fill-panel{fill:var(--panel)} .fill-ink{fill:var(--ink)} .fill-muted{fill:var(--muted)}
+  .stroke-ink{stroke:var(--ink);fill:none} .stroke-muted{stroke:var(--muted);fill:none}
+  .stroke-c1{stroke:var(--c1);fill:none} .stroke-c2{stroke:var(--c2);fill:none}
+  .stroke-c3{stroke:var(--c3);fill:none} .stroke-c4{stroke:var(--c4);fill:none}
+  .label{fill:var(--ink);font-size:18px;font-weight:600;font-family:inherit}
+  .label-sm{fill:var(--muted);font-size:14px;font-family:inherit}
+
+  /* ==========================================================================
+     ここから下はトピックごとに足す（色は var(--…) から選ぶ）
+     ========================================================================== */
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>【トピック】</h1>
+<p class="lead">【何の話か。一文で】</p>
+
+<!-- SVG の書き方の例（消して中身を書く）: viewBox を決め、SVG 用クラスで塗り、矢印は marker を使う -->
+<svg viewBox="0 0 800 220" role="img" aria-label="【絵の中身を一文で】">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="fill-muted"/>
+    </marker>
+  </defs>
+  <rect x="60" y="50" width="200" height="120" rx="20" class="fill-c1s"/>
+  <text x="160" y="118" text-anchor="middle" class="label">【主役】</text>
+  <line x1="280" y1="110" x2="520" y2="110" class="stroke-muted" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="400" y="92" text-anchor="middle" class="label-sm">【何が起きるか】</text>
+  <rect x="540" y="50" width="200" height="120" rx="20" class="fill-c2s"/>
+  <text x="640" y="118" text-anchor="middle" class="label">【相手役】</text>
+</svg>
+
+</div>
+</body>
+</html>

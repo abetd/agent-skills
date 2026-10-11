@@ -1,0 +1,250 @@
+<!doctype html>
+<!--
+  ============================================================================
+  review-triage テンプレート
+  ============================================================================
+  使い方:
+    1. このファイルを原型として出力先に書き出す
+    2. style 要素はそのまま使う（配色の CSS 変数は sounding-board テンプレの変数に、レビュー用の色を足したもの。部品はレビュー用）
+    3. must / want / nits の各セクションに指摘カードを並べる。0件のセクションは
+       「該当なし」の一行を残す（セクション自体は消さない — 走査した証跡になる）。
+       失敗したレビュー源は、ヘッダーのレビュー源欄に「失敗」と理由を書き分ける
+       （「該当なし」が証跡になるのは、実行できたレビュー源についてだけ）
+    4. 更新は毎回全体を上書きする
+
+  構成（body 要素内、コメントで区切ってある）:
+    [A] ヘッダー（ブランチと変更内容の一言・最終更新・base・コミット・レビュー源・仕様にしたファイル・サマリ・推奨サマリ）
+    [B] 指摘カード（must / want / nits 共通）
+    [C] フッター
+
+  ステータスのクラス（.st に併記）:
+    undecided = 未定 / accepted = 対応する / done = 対応済み /
+    skipped = 見送り / hold = 保留
+  推奨のクラス（.rec に併記。ステータスとは別物 — 決めるのはユーザー）:
+    pending = 検証中（ボード生成直後）/ do = 対応 / skip = 見送り / ask = 要判断
+  分類バッジのクラス: badge-m / badge-w / badge-n
+  直近更新のマーク:
+    span.new（中身は NEW）を今回変わった項目にだけ付け、次回の更新で外す
+-->
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>レビュー: 【ブランチ名】 — 【変更内容を一言で】</title>
+<style>
+  /* ==========================================================================
+     骨格 CSS — sounding-board テンプレと同系の配色・ダークモード対応
+     ========================================================================== */
+  :root{
+    --bg:#f7f7f5; --panel:#fff; --ink:#1c1b19; --muted:#6b6864; --line:#e0ddd7;
+    --settled:#2f7d5d; --settled-bg:#e8f4ee;
+    --open:#b26a00; --open-bg:#fdf3e2;
+    --future:#7a7a7a; --future-bg:#f0efec;
+    --rejected:#a33; --rejected-bg:#faeaea;
+    --accent:#3b5bdb; --accent-bg:#e9edfb; --note-bg:#f1f3fb;
+    --must:#c0392b; --must-bg:#fbecea;
+    --want:#b26a00; --want-bg:#fdf3e2;
+    --nits:#5b7a99; --nits-bg:#eaf0f6;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#17181a; --panel:#1f2124; --ink:#e8e6e3; --muted:#9a9691; --line:#33363a;
+      --settled:#6bc79b; --settled-bg:#1c2f27;
+      --open:#e0a44a; --open-bg:#332918;
+      --future:#8d9096; --future-bg:#26282b;
+      --rejected:#e08585; --rejected-bg:#33201f;
+      --accent:#8ba4ff; --accent-bg:#20263a; --note-bg:#20242e;
+      --must:#e57368; --must-bg:#361f1c;
+      --want:#e0a44a; --want-bg:#332918;
+      --nits:#8fb0cf; --nits-bg:#1f2831;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:32px 20px 80px;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",YuGothic,Meiryo,sans-serif;
+    line-height:1.7;font-size:15px}
+  .wrap{max-width:980px;margin:0 auto}
+  header{border-bottom:2px solid var(--line);padding-bottom:16px;margin-bottom:28px}
+  h1{font-size:22px;margin:0 0 6px}
+  .sub{color:var(--muted);font-size:13px}
+  h2{font-size:16px;margin:36px 0 14px;padding-left:10px;border-left:4px solid var(--accent)}
+  h2.must{border-left-color:var(--must)}
+  h2.want{border-left-color:var(--want)}
+  h2.nits{border-left-color:var(--nits)}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;
+    background:var(--future-bg);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+
+  /* ヘッダーのメタ情報・サマリ */
+  .meta{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;font-size:13px;margin-top:12px}
+  .meta dt{color:var(--muted);font-weight:600;white-space:nowrap}
+  .meta dd{margin:0}
+  .summary{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;font-size:13px}
+  .count{display:inline-flex;align-items:center;gap:7px;padding:5px 14px;border-radius:99px;font-weight:700}
+  .count.m{background:var(--must-bg);color:var(--must)}
+  .count.w{background:var(--want-bg);color:var(--want)}
+  .count.n{background:var(--nits-bg);color:var(--nits)}
+  .count small{font-weight:400;opacity:.85}
+  .recsum{margin-top:8px;font-size:13px;color:var(--muted)}
+  .recsum b{color:var(--ink)}
+
+  /* 指摘カード */
+  .finding{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;margin-bottom:12px}
+  .finding.must{border-left:4px solid var(--must)}
+  .finding.want{border-left:4px solid var(--want)}
+  .finding.nits{border-left:4px solid var(--nits)}
+  .finding .head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .fid{font-weight:800;font-size:14px;min-width:32px}
+  .finding.must .fid{color:var(--must)}
+  .finding.want .fid{color:var(--want)}
+  .finding.nits .fid{color:var(--nits)}
+  .ftitle{font-weight:600;flex:1;min-width:200px}
+  .floc{font-size:12px;color:var(--muted);margin-top:4px}
+  .floc code{background:transparent;padding:0}
+  .fbody{font-size:14px;margin-top:6px}
+
+  /* 出典タグ */
+  .src{display:inline-block;font-size:10.5px;font-weight:600;color:var(--muted);
+    background:var(--future-bg);border-radius:4px;padding:1px 7px;margin-right:4px}
+
+  /* ステータス */
+  .st{display:inline-flex;align-items:center;padding:3px 12px;border-radius:99px;
+    font-size:12px;font-weight:700;white-space:nowrap}
+  .st.undecided{background:var(--open-bg);color:var(--open)}
+  .st.accepted{background:var(--accent-bg);color:var(--accent)}
+  .st.done{background:var(--settled-bg);color:var(--settled)}
+  .st.skipped{background:var(--rejected-bg);color:var(--rejected)}
+  .st.hold{background:var(--future-bg);color:var(--future)}
+
+  /* 推奨（対応要否の検証結果）— ステータスより控えめに、枠線だけで示す */
+  .rec{display:flex;gap:8px;align-items:baseline;font-size:13px;margin-top:8px;
+    padding-top:8px;border-top:1px dashed var(--line)}
+  .rec .rl{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;white-space:nowrap}
+  .rec .rv{font-weight:700;font-size:12px;border:1px solid currentColor;border-radius:4px;
+    padding:0 7px;white-space:nowrap}
+  .rec.do .rv{color:var(--accent)}
+  .rec.skip .rv{color:var(--rejected)}
+  .rec.ask .rv{color:var(--open)}
+  .rec.pending .rv{color:var(--future);border-style:dashed}
+  .rec .rr{color:var(--muted)}
+
+  /* 補足ブロック */
+  .note{background:var(--note-bg);border-radius:6px;padding:8px 11px;font-size:13px;margin-top:8px}
+  .note b{font-size:11px;color:var(--accent);letter-spacing:.05em}
+
+  /* 直近更新マーク */
+  .new{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--accent);
+    border:1px solid var(--accent);border-radius:4px;padding:0 5px;vertical-align:middle;margin-left:6px}
+
+  /* 0件セクションのプレースホルダ */
+  .empty{color:var(--muted);font-size:13.5px;background:var(--panel);border:1px dashed var(--line);
+    border-radius:10px;padding:12px 16px}
+
+  footer{margin-top:48px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ==========================================================================
+     [A] ヘッダー
+     サマリは分類ごとの全件数と、そのうち未定の件数を書く（例: must 3 未定 2）。残量が分かる
+     ========================================================================== -->
+<header>
+  <h1>レビュー: 【ブランチ名】 — 【変更内容を一言で】</h1>
+  <div class="sub">最終更新: 【日時 / 何をしたか。例: 初回レビュー完了・対応指示待ち】</div>
+  <dl class="meta">
+    <dt>base</dt><dd><code>【base の名前】（【merge-base の短縮ハッシュ。必須】）</code>（merge-base 比較）</dd>
+    <dt>コミット</dt><dd>【N件: 先頭〜末尾の短縮ハッシュ。0 件なら「なし（未コミットの変更のみ）」】</dd>
+    <dt>レビュー源</dt><dd>【実行したもの。出典タグと同じ短い名前で。失敗したものは理由を添える。例: code-reviewer, spec, silent-failure, security-review（失敗: 差分が空のまま実行された）】</dd>
+    <!-- 仕様チェックを実行したときだけ置く -->
+    <dt>仕様</dt><dd><code>【仕様にしたファイル。例: .scratch/foo-design.html】</code></dd>
+  </dl>
+  <div class="summary">
+    <span class="count m">must 【X】<small>未定 【x】</small></span>
+    <span class="count w">want 【Y】<small>未定 【y】</small></span>
+    <span class="count n">nits 【Z】<small>未定 【z】</small></span>
+  </div>
+  <!-- 推奨サマリ: ボード生成直後は「推奨: 検証中」とだけ書き、検証後に内訳へ置き換える -->
+  <div class="recsum">推奨: 対応 <b>【A】</b> / 見送り <b>【B】</b> / 要判断 <b>【C】</b></div>
+</header>
+
+<!-- ==========================================================================
+     [B] 指摘カード
+     クラス: .finding.must / .finding.want / .finding.nits
+     ステータス: undecided(未定) / accepted(対応する) / done(対応済み) /
+                 skipped(見送り) / hold(保留)
+     ID は M1/W1/N1 形式。再レビューでも ID は変えず、新規は続番。
+     補足(.note)は「修正方針・トレードオフ・見送り理由・修正しきれなかった理由」があるときのみ付ける。
+     推奨(.rec)は全カードに付ける: pending(検証中) / do(対応) / skip(見送り) / ask(要判断)。
+     理由は 1 行。誤検知は「誤検知 — 根拠」、分類とのずれは「実害なし、want 相当」のように明記する。
+     ========================================================================== -->
+<h2 class="must">must — 対応必須の指摘</h2>
+
+<div class="finding must">
+  <div class="head">
+    <span class="fid">M1</span>
+    <span class="ftitle">【指摘の一行タイトル】<span class="new">NEW</span></span>
+    <span class="st undecided">未定</span>
+  </div>
+  <div class="floc"><code>【path/to/file.ext:123】</code>
+    <span class="src">【code-reviewer】</span><span class="src">【spec】</span>
+  </div>
+  <div class="fbody">【問題の内容と根拠。結論を先に、1〜3文】</div>
+  <div class="rec do"><span class="rl">推奨</span><span class="rv">対応</span>
+    <span class="rr">【理由 1 行。例: 入力が空のとき実際に例外になることを確認】</span></div>
+  <div class="note"><b>補足</b><br>【修正方針や見送り理由など。不要なら .note ごと削除】</div>
+</div>
+
+<!-- ボード生成直後（検証前）の推奨欄はこの形にする -->
+<div class="finding must">
+  <div class="head">
+    <span class="fid">M2</span>
+    <span class="ftitle">【指摘の一行タイトル】</span>
+    <span class="st undecided">未定</span>
+  </div>
+  <div class="floc"><code>【path/to/file.ext:200】</code><span class="src">【security-review】</span></div>
+  <div class="fbody">【…】</div>
+  <div class="rec pending"><span class="rl">推奨</span><span class="rv">検証中</span></div>
+</div>
+
+<!-- 0件のセクションはカードの代わりにこれを置く -->
+<div class="empty">該当なし</div>
+
+<h2 class="want">want — 対応が望ましい指摘</h2>
+
+<div class="finding want">
+  <div class="head">
+    <span class="fid">W1</span>
+    <span class="ftitle">【指摘の一行タイトル】</span>
+    <span class="st done">対応済み</span>
+  </div>
+  <div class="floc"><code>【path/to/file.ext:45】</code><span class="src">【type-design】</span></div>
+  <div class="fbody">【…】</div>
+  <div class="rec ask"><span class="rl">推奨</span><span class="rv">要判断</span>
+    <span class="rr">【ユーザーにしか決められない点を書く。例: 仕様上この値が null になり得るか次第】</span></div>
+</div>
+
+<h2 class="nits">nits — 些末な指摘</h2>
+
+<div class="finding nits">
+  <div class="head">
+    <span class="fid">N1</span>
+    <span class="ftitle">【指摘の一行タイトル】</span>
+    <span class="st skipped">見送り</span>
+  </div>
+  <div class="floc"><code>【path/to/file.ext:9】</code><span class="src">【code-reviewer】</span></div>
+  <div class="fbody">【…】</div>
+  <div class="rec skip"><span class="rl">推奨</span><span class="rv">見送り</span>
+    <span class="rr">【例: 誤検知 — 呼び出し元で検証済みのため到達しない】</span></div>
+</div>
+
+<!-- ==========================================================================
+     [C] フッター
+     現在の状態と次のアクションを一行で
+     ========================================================================== -->
+<footer>【例: 未定 M1 の対応要否を ID で指示してください（「M1 対応、N1 見送り」など）。】</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,352 @@
+<!doctype html>
+<!--
+  ============================================================================
+  sounding-board テンプレート
+  ============================================================================
+  使い方:
+    1. このファイルをコピーして出力先に置く
+    2. style 要素はそのまま使う（骨格 CSS。触る必要はほぼ無い）
+    3. body 要素内のセクションは下の順番で固定する。セクション内の部品は
+       議論の型に合うものだけを残し、残りは削除する
+    4. 毎回の更新では全体を上書きする
+
+  セクションの並び（body 要素内、コメントで区切ってある）:
+    [A] ヘッダー（凡例・完了バナー）
+    [B] 確定事項                     ... 課題 1 行 ＋ 確定した決定の一覧（実装に繋がる議論の凍結時は「作るもの」も）
+    [C] 構造                         ... Design Tree（意思決定・設計）／タイムライン（調査・障害対応）
+    [D] Q&A の補足                   ... 調べて分かったこと・比較表・仮説と検証・フロー図
+    [E] Q&A ログ（Round）            ... 古い Round が上、最新の Round が末尾
+    [F] フッター
+  補足ブロック（note）は [D][E] のどこにでも置ける（条件付きで必須）
+
+  ステータスのクラス:
+    s = 確定 / o = 回答待ち（フロンティア） / f = 未着手（後続）
+  直近更新のマーク:
+    span.new（中身は NEW）を今回変わった項目にだけ付け、次回の更新で外す
+-->
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>【テーマ名】</title>
+<style>
+  /* ==========================================================================
+     骨格 CSS — 配色・ステータス色分け・ダークモード対応
+     ここは原則そのまま使う
+     ========================================================================== */
+  :root{
+    --bg:#f7f7f5; --panel:#fff; --ink:#1c1b19; --muted:#6b6864; --line:#e0ddd7;
+    --settled:#2f7d5d; --settled-bg:#e8f4ee;
+    --open:#b26a00; --open-bg:#fdf3e2;
+    --future:#7a7a7a; --future-bg:#f0efec;
+    --rejected:#a33; --accent:#3b5bdb; --note-bg:#f1f3fb;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#17181a; --panel:#1f2124; --ink:#e8e6e3; --muted:#9a9691; --line:#33363a;
+      --settled:#6bc79b; --settled-bg:#1c2f27;
+      --open:#e0a44a; --open-bg:#332918;
+      --future:#8d9096; --future-bg:#26282b;
+      --rejected:#e08585; --accent:#8ba4ff; --note-bg:#20242e;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:32px 20px 80px;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",YuGothic,Meiryo,sans-serif;
+    line-height:1.7;font-size:15px}
+  .wrap{max-width:980px;margin:0 auto}
+  header{border-bottom:2px solid var(--line);padding-bottom:16px;margin-bottom:28px}
+  h1{font-size:22px;margin:0 0 6px}
+  .sub{color:var(--muted);font-size:13px}
+  h2{font-size:16px;margin:36px 0 14px;padding-left:10px;border-left:4px solid var(--accent)}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;
+    background:var(--future-bg);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+
+  /* 凡例 */
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:12px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;font-weight:600}
+  .chip.s{background:var(--settled-bg);color:var(--settled)}
+  .chip.o{background:var(--open-bg);color:var(--open)}
+  .chip.f{background:var(--future-bg);color:var(--future)}
+
+  /* 決定木 */
+  .tree{list-style:none;margin:0;padding:0}
+  .tree ul{list-style:none;margin:0;padding-left:26px;position:relative}
+  .tree ul::before{content:"";position:absolute;left:8px;top:0;bottom:14px;width:1px;background:var(--line)}
+  .tree li{position:relative;margin:8px 0}
+  .tree ul>li::before{content:"";position:absolute;left:-18px;top:16px;width:16px;height:1px;background:var(--line)}
+  .node{display:flex;gap:10px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);
+    border-radius:8px;padding:9px 13px}
+  .node.s{border-left:4px solid var(--settled)}
+  .node.o{border-left:4px solid var(--open)}
+  .node.f{border-left:4px solid var(--future);opacity:.75}
+  .node .id{font-weight:700;font-size:12px;color:var(--muted);min-width:26px;padding-top:2px}
+  .node .body{flex:1}
+  .node .t{font-weight:600}
+  .node .v{font-size:13px;color:var(--muted);margin-top:2px}
+  .node .v b{color:var(--settled);font-weight:600}
+
+  /* フロー図 */
+  .flow{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px 18px;overflow-x:auto}
+  .flowrow{display:flex;align-items:stretch;gap:0;min-width:720px}
+  .step{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;text-align:center}
+  .step .n{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.05em}
+  .step .l{font-weight:600;font-size:13px;margin-top:3px}
+  .step .d{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+  .arrow{display:flex;align-items:center;color:var(--muted);padding:0 8px;font-size:18px}
+  .loopnote{text-align:center;font-size:12px;color:var(--accent);margin-top:12px;
+    border-top:1px dashed var(--line);padding-top:10px}
+
+  /* Q&A カード / 汎用パネル */
+  .qa{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:12px}
+  .qa .head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .qa .qid{font-weight:700;color:var(--accent);font-size:13px}
+  .qa .qt{font-weight:600}
+  .qa dl{margin:10px 0 0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px}
+  .qa dt{color:var(--muted);font-size:12px;font-weight:600;padding-top:2px;white-space:nowrap}
+  .qa dd{margin:0}
+  .qa .rej{color:var(--rejected)}
+
+  /* 補足ブロック */
+  .note{background:var(--note-bg);border-radius:6px;padding:8px 11px;font-size:13px;margin-top:10px}
+  .note b{font-size:11px;color:var(--accent);letter-spacing:.05em}
+
+  /* セクション見出し（ラウンド・日付など） */
+  .round{font-size:12px;color:var(--muted);margin:24px 0 10px;letter-spacing:.06em;text-transform:uppercase}
+
+  /* 直近更新マーク */
+  .new{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--accent);
+    border:1px solid var(--accent);border-radius:4px;padding:0 5px;vertical-align:middle;margin-left:6px}
+
+  /* 完了バナー */
+  .done{background:var(--settled-bg);color:var(--settled);border:1px solid var(--settled);
+    border-radius:8px;padding:12px 16px;margin-top:14px;font-weight:600;font-size:14px}
+  .done span{font-weight:400;color:var(--muted);display:block;font-size:12.5px;margin-top:3px}
+
+  /* 表 */
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin-top:10px}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+  th{background:var(--future-bg);font-size:12px;color:var(--muted);font-weight:600}
+  td.ok{color:var(--settled);font-weight:600}
+  td.ng{color:var(--rejected);font-weight:600}
+
+  /* タイムライン */
+  .tl{list-style:none;margin:0;padding:0 0 0 22px;position:relative}
+  .tl::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--line)}
+  .tl li{position:relative;margin:0 0 14px}
+  .tl li::before{content:"";position:absolute;left:-21px;top:8px;width:9px;height:9px;border-radius:50%;
+    background:var(--panel);border:2px solid var(--future)}
+  .tl li.s::before{border-color:var(--settled)}
+  .tl li.o::before{border-color:var(--open)}
+  .tl .when{font-size:11.5px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+  .tl .what{font-weight:600;margin-top:1px}
+  .tl .detail{font-size:13px;color:var(--muted);margin-top:2px}
+
+  footer{margin-top:48px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ==========================================================================
+     [A] ヘッダー
+     .sub には「何の議論か / 最終更新はどこまでか」を一行で書く
+     ========================================================================== -->
+<header>
+  <h1>【テーマ名】</h1>
+  <div class="sub">【議論の種類】/ 最終更新: 【Round N 完了時点 など】</div>
+  <div class="legend">
+    <span class="chip s">● 確定</span>
+    <span class="chip o">● 回答待ち（現フロンティア）</span>
+    <span class="chip f">● 未着手</span>
+    <span class="chip" style="border:1px solid var(--accent);color:var(--accent)">NEW ＝ 直近の更新で変わった項目</span>
+  </div>
+
+  <!-- 完了バナー: 回答待ちと未着手がどちらも空になったときだけ、下の div をコメントの外に出してヘッダー内に置く。
+       凍結を解くときはまたコメントに戻す（review-triage と scratch-cleanup はこのバナーの有無で凍結済みかを判定する）
+  <div class="done">✓ 合意済み — 全N項目 確定／回答待ち・未着手ともに空
+    <span>【この後どうするか。例: 実装はユーザーの許可を得てから。進捗はプランファイル側で管理する】</span>
+  </div>
+  -->
+</header>
+
+<!-- ==========================================================================
+     [B] 確定事項
+     いまの合意内容の一覧。Round のたびに書き直す（追記ではなく現状を表す）。
+     課題は 1 行だけ書く。決定は「何が決まったか」だけを短く — 経緯は Q&A ログへ。
+     review-triage の仕様チェックはここと構造（Design Tree またはタイムライン）を仕様として読む。
+     ========================================================================== -->
+<h2>確定事項</h2>
+<div class="qa">
+  <dl>
+    <dt>課題</dt><dd>【何を解決したいのか。1 行】</dd>
+  </dl>
+  <table>
+    <tr><th>ID</th><th>決定</th></tr>
+    <tr><td>Q1</td><td>【確定した答え】</td></tr>
+    <tr><td>Q2</td><td>【確定した答え】<span class="new">NEW</span></td></tr>
+  </table>
+</div>
+
+<!-- 実装に繋がる議論で、凍結時（回答待ちと未着手がどちらも空になったとき）だけ、確定事項の中に「作るもの」を置く。
+     プランファイル側から参照しやすくするため -->
+<div class="qa">
+  <div class="head"><span class="qt">この設計から作るもの</span></div>
+  <table>
+    <tr><th>対象</th><th>内容</th></tr>
+    <tr><td><code>【ファイルパス】</code></td><td>【何を書くか】</td></tr>
+    <tr><td>既存ファイルの変更</td><td>【あれば列挙。無ければ「なし」】</td></tr>
+  </table>
+</div>
+
+<!-- ==========================================================================
+     [C] 構造 ── 議論の型に合う部品を置く（SKILL.md 2-2。型が変われば足す・組み合わせる）
+     ========================================================================== -->
+
+<!-- [C-1] 決定木（Design Tree）── 意思決定・設計向け
+     ネストで「どの決定がどれにぶら下がるか」を表す。
+     .node の s/o/f でステータスを塗り分ける。回答待ち(o)も必ず載せること。
+     範囲外にした論点はノードを消さず s にして、答えに「範囲外（却下）— 理由」と書く。 -->
+<h2>Design Tree</h2>
+<ul class="tree">
+  <li>
+    <div class="node s"><div class="id">◆</div><div class="body">
+      <div class="t">【ルート = 議論全体のテーマ】</div>
+      <div class="v">【一行で要約】</div>
+    </div></div>
+    <ul>
+      <li>
+        <div class="node s"><div class="id">Q1</div><div class="body">
+          <div class="t">【論点】</div>
+          <div class="v"><b>【確定した答え】</b>（【却下したものがあれば括弧で】）</div>
+        </div></div>
+        <!-- 子論点はさらに <ul> をネストする -->
+        <ul>
+          <li><div class="node o"><div class="id">Q2</div><div class="body">
+            <div class="t">【回答待ちの論点】<span class="new">NEW</span></div>
+            <div class="v">【何を決める必要があるか】</div>
+          </div></div></li>
+        </ul>
+      </li>
+      <li>
+        <div class="node f"><div class="id">Q3+</div><div class="body">
+          <div class="t">【後続ラウンドで扱う論点】</div>
+          <div class="v">【なぜ今ではないか。例: Q1 の答えで分岐するため】</div>
+        </div></div>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<!-- [C-2] タイムライン（見出しは「経過」）── 調査・障害対応向け
+     li の class で s(確定した事実) / o(調査中) / 無印(未着手) を塗り分ける -->
+<h2>経過</h2>
+<ul class="tl">
+  <li class="s">
+    <div class="when">【時刻 / ステップ番号】</div>
+    <div class="what">【起きたこと・やったこと】</div>
+    <div class="detail">【判明した事実。一行で】</div>
+  </li>
+  <li class="o">
+    <div class="when">【…】</div>
+    <div class="what">【調査中の項目】<span class="new">NEW</span></div>
+    <div class="detail">【何を確かめようとしているか】</div>
+  </li>
+</ul>
+
+<!-- ==========================================================================
+     [D] Q&A の補足
+     問いに答えるための材料。必要な部品だけを置く。
+     ========================================================================== -->
+<h2>Q&amp;A の補足</h2>
+
+<!-- [D-1] 調べて分かったこと ── 調査で判明した事実（ファイルの実体・既存実装の挙動・環境の制約など） -->
+<div class="qa">
+  <div class="head"><span class="qt">調べて分かったこと</span></div>
+  <table>
+    <tr><th>対象</th><th>事実</th></tr>
+    <tr><td>【…】</td><td>【…】</td></tr>
+  </table>
+</div>
+
+<!-- [D-2] 比較表 ── 比較検討向け
+     評価軸を明示すること（何を基準に比べたのか分からない表は役に立たない） -->
+<div class="qa">
+  <div class="head"><span class="qid">Q1</span><span class="qt">【何の比較か】</span></div>
+  <dl>
+    <dt>評価軸</dt><dd>【何を基準に比べるか。優先順位も書く】</dd>
+  </dl>
+  <table>
+    <tr><th>案</th><th>【軸1】</th><th>【軸2】</th><th>【軸3】</th><th>判定</th></tr>
+    <tr><td>【案A】</td><td>【…】</td><td>【…】</td><td>【…】</td><td class="ok">採用</td></tr>
+    <tr><td>【案B】</td><td>【…】</td><td>【…】</td><td>【…】</td><td class="ng">却下</td></tr>
+  </table>
+  <div class="note"><b>補足</b><br>【トレードオフを1〜3文で】</div>
+</div>
+
+<!-- [D-3] 仮説と検証結果の表 ── 調査・障害対応向け -->
+<div class="qa">
+  <div class="head"><span class="qt">仮説と検証</span></div>
+  <table>
+    <tr><th>仮説</th><th>検証方法</th><th>結果</th></tr>
+    <tr><td>【…】</td><td>【…】</td><td class="ng">棄却 — 【理由】</td></tr>
+    <tr><td>【…】</td><td>【…】</td><td class="ok">確認 — 【根拠】</td></tr>
+    <tr><td>【…】</td><td>【…】</td><td>未検証</td></tr>
+  </table>
+</div>
+
+<!-- [D-4] フロー図 ── 流れの可視化
+     .step を並べ、間に .arrow を挟む。ループがあるなら .loopnote で補う -->
+<div class="flow">
+  <div class="flowrow">
+    <div class="step"><div class="n">START</div><div class="l">【段階名】</div>
+      <div class="d">【短い説明】</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">1</div><div class="l">【段階名】</div>
+      <div class="d">【短い説明】</div></div>
+    <div class="arrow">→</div>
+    <div class="step"><div class="n">END</div><div class="l">【段階名】</div>
+      <div class="d">【短い説明】</div></div>
+  </div>
+  <div class="loopnote">↺ 【繰り返す範囲と終了条件】</div>
+</div>
+
+<!-- ==========================================================================
+     [E] Q&A ログ（Round）
+     古い Round を上、最新の Round を末尾に置く（上へスクロールすると遡れる）。
+     dt には 推奨 / 回答 / 却下 / 反応 / 判明 などを置く。却下は class="rej" で赤く落とす。
+     補足は「却下あり／トレードオフあり／前の決定を修正」のときのみ付ける。
+     ========================================================================== -->
+<h2>Q&amp;A ログ</h2>
+
+<div class="round">Round 1 — 確定</div>
+
+<div class="qa">
+  <div class="head"><span class="qid">Q1</span><span class="qt">【問いの見出し】</span></div>
+  <dl>
+    <dt>推奨</dt><dd>【提案した案。無ければこの行ごと削除】</dd>
+    <dt>回答</dt><dd>【ユーザーの答え】</dd>
+    <dt class="rej">却下</dt><dd class="rej">【却下した選択肢 — 理由を短く】</dd>
+  </dl>
+  <div class="note"><b>補足</b><br>
+    【1〜3文。「なぜ選んだか」ではなく<strong>「この選択が後で何を縛るか」</strong>を書く】
+  </div>
+</div>
+
+<div class="round">Round 2 — 回答待ち<span class="new">NEW</span></div>
+
+<div class="qa">
+  <div class="head"><span class="qid">Q2</span><span class="qt">【いま問うている問い】</span></div>
+  <dl>
+    <dt>推奨</dt><dd>【推奨する案と理由を短く】</dd>
+  </dl>
+</div>
+
+<!-- ==========================================================================
+     [F] フッター
+     ========================================================================== -->
+<footer>【現在の状態を一行で。例: Round 2（Q2）回答待ち。／合意形成完了。実装はユーザーの許可を得てから。】</footer>
+
+</div>
+</body>
+</html>
