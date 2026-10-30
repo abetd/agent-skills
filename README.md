@@ -8,6 +8,7 @@ Claude Code 用の自作スキル集です。スキル本体（SKILL.md）は日
 |---|---|
 | [sounding-board](skills/sounding-board/SKILL.md) | 壁打ちの相手になり、問いを出してラウンドを回しながら、決定事項と未解決の問いを HTML のボードに残す |
 | [review-triage](skills/review-triage/SKILL.md) | 外部のレビューと、sounding-board のボード・プランファイルを仕様にした自前の仕様チェックを束ねて実行し、指摘を must / want / nits に仕分けた HTML ボードで対応方針を管理する。各指摘をコードに当たって検証して推奨を付け、明示的な修正指示があれば対応する指摘をまとめて修正する |
+| [board-to-impl](skills/board-to-impl/SKILL.md) | sounding-board で凍結したボードから、プランファイルを作って実装まで進める。ボードの点検・プランとボードの照合・実装とプランの照合をそれぞれ新しいサブエージェントに見させ、判断の要る問いは止めて聞く。プランどおりに直せる実装漏れと、新しく落ちたテストは聞かずに直す |
 | [explainer](skills/explainer/SKILL.md) | トピックを、大きな絵と少ない言葉の HTML 説明資料にしてローカル（`.scratch/`）に保存する。「図解して」「わかりやすく説明して」などで起動し、作る前に確認する |
 | [scratch-cleanup](skills/scratch-cleanup/SKILL.md) | `.scratch/` の古いファイル（n 日更新が無いもの・マージ済みブランチのレビューボード・新しい版がある説明資料）を一覧にし、外したもの以外を `.scratch/archive/` に移すか削除する |
 
@@ -42,9 +43,9 @@ npx skills add abetd/agent-skills
 
 ## 保存先（`.scratch/`）
 
-sounding-board・review-triage・explainer は、作った HTML をリポジトリルートの `.scratch/` に置きます。ここに置くと別のセッションから続きを書けます（sounding-board の再開、review-triage の再レビュー）。
+sounding-board・review-triage・explainer は、作った HTML をリポジトリルートの `.scratch/` に置きます。ここに置くと別のセッションから続きを書けます（sounding-board の再開、review-triage の再レビュー）。board-to-impl は、ボードと同じ場所にプランファイル（`<ボード名>-plan.md`）を置き、実装の再開に使います。review-triage は、このプランもボードと一緒に仕様にできます。
 
-- `.scratch/` が無ければ、スキルが作るかを聞きます（scratch-cleanup は作らず、片付けるものが無いと告げて終わります）。作らなければ、そのセッションだけの一時ディレクトリ（scratchpad）に置きます。断っても記録しないので、次に起動したときにまた聞きます
+- `.scratch/` が無ければ、スキルが作るかを聞きます（scratch-cleanup は作らず、片付けるものが無いと告げて終わります。board-to-impl はボードのある場所を使うので、作るかを聞きません）。作らなければ、そのセッションだけの一時ディレクトリ（scratchpad）に置きます。断っても記録しないので、次に起動したときにまた聞きます
 - スキルが作るのは実ディレクトリです。ほかの場所への symlink にしてもかまいません
 - git リポジトリの外では聞かずに scratchpad に置きます
 
@@ -70,4 +71,4 @@ review-triage は、次のレビュー資産を呼び出します。
 
 explainer は、Artifact 機能が有効な環境では Claude Code 組み込みの `artifact-design` をデザインの指針に使います（公開はしません）。無い環境では同梱のテンプレートで動きます。
 
-sounding-board と scratch-cleanup に外部の前提はありません。
+sounding-board・board-to-impl・scratch-cleanup に外部の前提はありません。

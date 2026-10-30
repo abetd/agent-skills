@@ -9,9 +9,10 @@ Claude Code 用の自作スキルを置くリポジトリ。
 - `install.sh` は `skills/*/SKILL.md` を自動で拾うので、スキルを足すときに触る必要はない
 - 保存先（`.scratch/`）の決め方は、スキルを 1 つずつ入れても読めるよう各 SKILL.md に重ねて書いてある。変えるときは全スキルと README の「保存先」をそろえる
 - スキルどうしは、ほかのスキルが書いたファイルを次の目印で読み分ける。目印を変えるときは、読む側の SKILL.md もそろえる
-  - レビューボードの見出し（`レビュー: <ブランチ> — <一言>`）とヘッダーの base・コミットのハッシュ: review-triage（2-1・3-3）と scratch-cleanup（3-2）
-  - sounding-board のボードの完了バナー（`<header>` 内のコメントの外にある `<div class="done">`）: sounding-board（1-4）・review-triage（3-3）・scratch-cleanup（3-3）
-  - 説明資料のファイル名（`*-explainer.html`・`*-explainer-<連番>.html`）と、完了バナーの CSS 定義（`.done{`。sounding-board のボードは持ち、説明資料は持たない）: scratch-cleanup（3-1）。explainer は `.done` というクラスを使わない
+  - レビューボードの見出し（`レビュー: <ブランチ> — <一言>`）とヘッダーの base・コミットのハッシュ: review-triage（2-1・3-3）と scratch-cleanup（3-2）。見出しの `レビュー:` だけは board-to-impl（ステップ 1）も使う
+  - sounding-board のボードの完了バナー（`<header>` 内のコメントの外にある `<div class="done">`）: sounding-board（1-4）・review-triage（3-3）・scratch-cleanup（3-3）・board-to-impl（ステップ 1）
+  - プランファイルの名前（`<ボード名>-plan.md`・`<ボード名>-plan-<連番>.md`）と、冒頭のボードへのリンク: board-to-impl（ステップ 2 の再開）・review-triage（3-3 でプランとリンク先のボードを並べる）
+  - 説明資料のファイル名（`*-explainer.html`・`*-explainer-<連番>.html`）と、完了バナーの CSS 定義（`.done{`。sounding-board のボードは持ち、説明資料は持たない）: scratch-cleanup（3-1）。CSS 定義の `.done{` だけは board-to-impl（ステップ 1）も使う。explainer は `.done` というクラスを使わない
 
 ## スキルを足す・消す・改名するとき
 
