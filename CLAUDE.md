@@ -8,8 +8,11 @@ Claude Code 用の自作スキルを置くリポジトリ。
 - `<名前>` は SKILL.md の frontmatter の `name` と揃える
 - `install.sh` は `skills/*/SKILL.md` を自動で拾うので、スキルを足すときに触る必要はない
 - 保存先（`.scratch/`）の決め方は、スキルを 1 つずつ入れても読めるよう各 SKILL.md に重ねて書いてある。変えるときは全スキルと README の「保存先」をそろえる
+- 凍結前の点検の観点は、board-to-impl の確認 ① と同じものを sounding-board（7-2）と board-to-impl（ステップ 3）に重ねて書いてある。変えるときは両方をそろえる
+- レビュー源の選択・分類・検証の書き方は、review-triage と pr-review-triage に重ねて書いてある。そろえるのは 3-0・3-1・3-2 の #3〜#7 の推奨条件・ステップ 5・ステップ 7 の検証の深さ／担い手／ボードへの反映。仕様の受け取り（3-3・3-4 の問 3）・未追跡ファイルの扱い・推奨の値と基準・再レビュー時の再検証の対象・ステータスは意図して違うので、そろえない
 - スキルどうしは、ほかのスキルが書いたファイルを次の目印で読み分ける。目印を変えるときは、読む側の SKILL.md もそろえる
-  - レビューボードの見出し（`レビュー: <ブランチ> — <一言>`）とヘッダーの base・コミットのハッシュ: review-triage（2-1・3-3）と scratch-cleanup（3-2）。見出しの `レビュー:` だけは board-to-impl（ステップ 1）も使う
+  - レビューボードの見出し（`レビュー: <ブランチ> — <一言>`）とヘッダーの base・コミットのハッシュ: review-triage（2-1・3-3）・pr-review-triage（2-1）と scratch-cleanup（3-2）。見出しの `レビュー:` だけは board-to-impl（ステップ 1）も使う
+  - レビューボードのファイル名の接尾辞（review-triage は `-review.html`、pr-review-triage は `-pr-triage.html`）: review-triage（2-1）・pr-review-triage（2-1）。見出しは同じなので、2 つのボードはこの接尾辞で見分ける
   - sounding-board のボードの完了バナー（`<header>` 内のコメントの外にある `<div class="done">`）: sounding-board（1-4）・review-triage（3-3）・scratch-cleanup（3-3）・board-to-impl（ステップ 1）
   - プランファイルの名前（`<ボード名>-plan.md`・`<ボード名>-plan-<連番>.md`）と、冒頭のボードへのリンク: board-to-impl（ステップ 2 の再開）・review-triage（3-3 でプランとリンク先のボードを並べる）
   - 説明資料のファイル名（`*-explainer.html`・`*-explainer-<連番>.html`）と、完了バナーの CSS 定義（`.done{`。sounding-board のボードは持ち、説明資料は持たない）: scratch-cleanup（3-1）。CSS 定義の `.done{` だけは board-to-impl（ステップ 1）も使う。explainer は `.done` というクラスを使わない

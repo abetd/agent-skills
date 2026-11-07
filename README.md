@@ -6,10 +6,11 @@ Claude Code 用の自作スキル集です。スキル本体（SKILL.md）は日
 
 | スキル | 概要 |
 |---|---|
-| [sounding-board](skills/sounding-board/SKILL.md) | 壁打ちの相手になり、問いを出してラウンドを回しながら、決定事項と未解決の問いを HTML のボードに残す |
-| [review-triage](skills/review-triage/SKILL.md) | 外部のレビューと、sounding-board のボード・プランファイルを仕様にした自前の仕様チェックを束ねて実行し、指摘を must / want / nits に仕分けた HTML ボードで対応方針を管理する。各指摘をコードに当たって検証して推奨を付け、明示的な修正指示があれば対応する指摘をまとめて修正する |
+| [sounding-board](skills/sounding-board/SKILL.md) | 壁打ちの相手になり、問いを出してラウンドを回しながら、決定事項と未解決の問いを HTML のボードに残す。実装に繋がる議論は、凍結の前にボードを新しいサブエージェントに一度点検させる |
+| [review-triage](skills/review-triage/SKILL.md) | 自分のブランチの変更について、外部のレビューと、sounding-board のボード・プランファイルを仕様にした自前の仕様チェックを束ねて実行し、指摘を must / want / nits に仕分けた HTML ボードで対応方針を管理する。各指摘をコードに当たって検証して推奨を付け、明示的な修正指示があれば対応する指摘をまとめて修正する |
+| [pr-review-triage](skills/pr-review-triage/SKILL.md) | 他の人の PR をレビューアとして仕分ける。checkout 済みの PR のブランチを base と比べ、外部のレビューと、渡された仕様（PR の説明文・Issue・作者のボードなど）での仕様チェックを束ねて、指摘を must / want / nits に仕分けた HTML ボードにする。各指摘をコードに当たって検証してコメントするかの推奨を付け、「コメントする」にした指摘に PR コメントの下書きを作る。コードは直さず、投稿もしない（Git ホスティングに依存しない） |
 | [board-to-impl](skills/board-to-impl/SKILL.md) | sounding-board で凍結したボードから、プランファイルを作って実装まで進める。ボードの点検・プランとボードの照合・実装とプランの照合をそれぞれ新しいサブエージェントに見させ、判断の要る問いは止めて聞く。プランどおりに直せる実装漏れと、新しく落ちたテストは聞かずに直す |
-| [explainer](skills/explainer/SKILL.md) | トピックを、大きな絵と少ない言葉の HTML 説明資料にしてローカル（`.scratch/`）に保存する。「図解して」「わかりやすく説明して」などで起動し、作る前に確認する |
+| [explainer](skills/explainer/SKILL.md) | トピックを、大きな絵と少ない言葉の HTML 説明資料にしてローカル（`.scratch/`）に保存する。「図解して」「説明資料にして」などで起動する |
 | [scratch-cleanup](skills/scratch-cleanup/SKILL.md) | `.scratch/` の古いファイル（n 日更新が無いもの・マージ済みブランチのレビューボード・新しい版がある説明資料）を一覧にし、外したもの以外を `.scratch/archive/` に移すか削除する |
 
 ## 入れ方
@@ -43,7 +44,7 @@ npx skills add abetd/agent-skills
 
 ## 保存先（`.scratch/`）
 
-sounding-board・review-triage・explainer は、作った HTML をリポジトリルートの `.scratch/` に置きます。ここに置くと別のセッションから続きを書けます（sounding-board の再開、review-triage の再レビュー）。board-to-impl は、ボードと同じ場所にプランファイル（`<ボード名>-plan.md`）を置き、実装の再開に使います。review-triage は、このプランもボードと一緒に仕様にできます。
+sounding-board・review-triage・pr-review-triage・explainer は、作った HTML をリポジトリルートの `.scratch/` に置きます。ここに置くと別のセッションから続きを書けます（sounding-board の再開、review-triage・pr-review-triage の再レビュー）。board-to-impl は、ボードと同じ場所にプランファイル（`<ボード名>-plan.md`）を置き、実装の再開に使います。review-triage は、このプランもボードと一緒に仕様にできます。
 
 - `.scratch/` が無ければ、スキルが作るかを聞きます（scratch-cleanup は作らず、片付けるものが無いと告げて終わります。board-to-impl はボードのある場所を使うので、作るかを聞きません）。作らなければ、そのセッションだけの一時ディレクトリ（scratchpad）に置きます。断っても記録しないので、次に起動したときにまた聞きます
 - スキルが作るのは実ディレクトリです。ほかの場所への symlink にしてもかまいません
@@ -52,22 +53,22 @@ sounding-board・review-triage・explainer は、作った HTML をリポジト�
 git で管理するかは自由です。スキルは git の設定に触れません。たとえば:
 
 - **自分だけの作業場にする**: `.scratch` を git に無視させます（`.gitignore` などに足す）
-- **チームで共有する**: `.scratch/` をコミットします。設計ボードを残しておけば、ほかの人も review-triage の仕様に使えます
+- **チームで共有する**: `.scratch/` をコミットします。設計ボードを残しておけば、ほかの人も review-triage の仕様に使えます。PR のレビューアは、checkout した PR に入っているボードのパスを pr-review-triage の仕様として渡せます
 
-どちらの場合も、review-triage は `.scratch/` の中をレビューの対象にしません。
+どちらの場合も、review-triage・pr-review-triage は `.scratch/` の中をレビューの対象にしません。
 
 たまったファイルは scratch-cleanup で片付けられます。アーカイブしたものは `.scratch/archive/` に移り、ほかのスキルからは見えなくなります（直下に戻せば、また見えます。移すときに同じ名前があって連番が付いたものは、元の名前に直して戻します）。削除したものは戻せません。
 
 ## 前提とする外部スキル
 
-review-triage は、次のレビュー資産を呼び出します。
+review-triage・pr-review-triage は、次のレビュー資産を呼び出します。
 
 | レビュー源 | 入手元 |
 |---|---|
 | `pr-review-toolkit` プラグイン | Claude Code の公式プラグイン（`/plugin install pr-review-toolkit@claude-plugins-official`） |
 | `security-review` | Claude Code 組み込み |
 
-`pr-review-toolkit` が無いときは、review-triage が入れ方を示し、仕様チェックと `security-review` だけで続けるかを聞きます。
+`pr-review-toolkit` が無いときは、review-triage・pr-review-triage が入れ方を示し、仕様チェックと `security-review` だけで続けるかを聞きます。
 
 explainer は、Artifact 機能が有効な環境では Claude Code 組み込みの `artifact-design` をデザインの指針に使います（公開はしません）。無い環境では同梱のテンプレートで動きます。
 
